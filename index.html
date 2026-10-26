@@ -1,40 +1,513 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-</head>
-  
-<body>
-    <nav class="topnav">
-        <a class="active" href="home">Home</a>
-        <a>Placeholder</a>
-        <a>Placeholder</a>
-        <a>Placeholder</a>
-    </nav>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Redline Writing Assistant (Copy)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a writer's desk. Manuscript editor on the left, the editor's margin (suggestions / rewrite) on the right, marketing around it. */
+:root {
+  --bg: #eef2ee;
+  --paper: #fbfcfa;
+  --ink: #17251f;
+  --muted: #5d6b64;
+  --line: #d3dcd6;
+  --pen: #c8372d;
+  --pen-soft: #f7e1de;
+  --pen-ink: #ffffff;
+  --green: #2b7a55;
+  --green-soft: #ddeee4;
+  --amber: #9a6a0c;
+  --amber-soft: #f6ebcf;
+  --blue: #2d5f9a;
+  --blue-soft: #dfe8f4;
+  --shade: #e4eae5;
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --prose: "Newsreader", Georgia, "Times New Roman", serif;
+  --ui: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111814; --paper: #18211c; --ink: #e5ece7; --muted: #95a39b; --line: #2c3a32;
+    --pen: #f06b5f; --pen-soft: #3a1f1c; --pen-ink: #111814;
+    --green: #6fcf9b; --green-soft: #1c3226; --amber: #e3b450; --amber-soft: #352c16;
+    --blue: #8db6ea; --blue-soft: #1c2a3d; --shade: #1f2a24; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111814; --paper: #18211c; --ink: #e5ece7; --muted: #95a39b; --line: #2c3a32;
+  --pen: #f06b5f; --pen-soft: #3a1f1c; --pen-ink: #111814;
+  --green: #6fcf9b; --green-soft: #1c3226; --amber: #e3b450; --amber-soft: #352c16;
+  --blue: #8db6ea; --blue-soft: #1c2a3d; --shade: #1f2a24; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--ui); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+:focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
+button { font-family: inherit; }
 
-    <div class = "grid">
-	    <div class = "flexleft">
-		    <div class = "title">TITLE</div>
-    		<div class = "resultsbox">
-                PLACEHOLDER PLACEHOLDER PLACEHOLDER PLACEHOLDER PLACEHOLDER PLACEHOLDER
-		    </div>
-	    </div>
-        <div></div>
-	    <div class = "flexright">
-		    <div class = "imagebox1">
-                <img src = "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png" height = 175px>
-		    </div>
-            <div class = "imagebox1">
-                <img src = "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png" height = 175px>
-		    </div>
-        </div>
-	
+nav .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 20px; }
+.logo { font: 400 30px/1 var(--display); color: var(--ink); text-decoration: none; display: inline-flex; align-items: baseline; gap: 2px; }
+.logo span { text-decoration: line-through; text-decoration-color: var(--pen); text-decoration-thickness: 2px; }
+.navlinks { display: flex; align-items: center; gap: 24px; font-weight: 500; }
+.navlinks a { color: var(--muted); text-decoration: none; }
+.navlinks a:hover { color: var(--ink); }
+@media (max-width: 680px) { .navlinks a:not(.btn) { display: none; } }
+
+.btn { font: 600 14px/1 var(--ui); border-radius: 8px; padding: 11px 16px; border: 1px solid transparent; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-pen { background: var(--pen); color: var(--pen-ink); }
+.btn-pen:hover { filter: brightness(1.07); }
+.btn-line { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-line:hover { background: var(--shade); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sm { padding: 7px 11px; font-size: 13px; }
+
+.hero { padding-block: 24px 32px; display: grid; gap: 14px; }
+.hero h1 { font: 400 clamp(42px, 7vw, 82px)/0.98 var(--display); letter-spacing: -0.02em; margin: 0; max-width: 15ch; text-wrap: balance; }
+.hero h1 del { color: var(--muted); text-decoration-color: var(--pen); text-decoration-thickness: 3px; }
+.hero h1 em { color: var(--pen); }
+.hero p { font-size: 18px; color: var(--muted); margin: 0; max-width: 56ch; }
+
+/* App */
+.app { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -40px rgb(23 37 31 / .45); overflow: hidden; }
+.appbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.docname { font: 500 13px/1 var(--mono); color: var(--muted); }
+.status { display: inline-flex; align-items: center; gap: 6px; font: 500 12px/1 var(--mono); color: var(--muted); }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.status.live::before { background: var(--green); }
+.status.busy::before { background: var(--amber); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .status.busy::before { animation: none; } }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+@media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+.editor { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.editor-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.label { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.textlink { background: none; border: 0; color: var(--pen); font: 500 13px/1 var(--ui); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+textarea#draft { width: 100%; min-height: 380px; resize: vertical; border: 0; background: transparent; color: var(--ink); font: 400 18px/1.7 var(--prose); padding: 0; }
+textarea#draft:focus { outline: none; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 20px; border-top: 1px solid var(--line); padding-top: 12px; }
+.stat { display: flex; flex-direction: column; gap: 3px; }
+.stat b { font: 500 16px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font: 500 10px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.stat.flag b { color: var(--amber); }
+
+.margin { border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; min-width: 0; }
+@media (max-width: 880px) { .margin { border-left: 0; border-top: 1px solid var(--line); } }
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; padding: 14px 12px; font: 600 14px/1 var(--ui); color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--pen); }
+.panel { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.example { font: 500 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; border: 1px dashed var(--muted); color: var(--muted); padding: 4px 7px; border-radius: 5px; }
+
+.sugs { display: flex; flex-direction: column; gap: 10px; }
+.sug { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.sug.applied, .sug.dismissed { opacity: .5; }
+.sug-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.kind { font: 600 11px/1 var(--ui); padding: 4px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; }
+.kind.grammar, .kind.spelling { background: var(--pen-soft); color: var(--pen); }
+.kind.clarity { background: var(--blue-soft); color: var(--blue); }
+.kind.tone { background: var(--amber-soft); color: var(--amber); }
+.kind.other { background: var(--shade); color: var(--muted); }
+.change { font: 400 16px/1.5 var(--prose); margin: 0; overflow-wrap: anywhere; }
+.change del { color: var(--pen); text-decoration-thickness: 1.5px; }
+.change ins { text-decoration: none; background: var(--green-soft); color: var(--green); padding: 0 3px; border-radius: 3px; }
+.why { font-size: 13px; color: var(--muted); margin: 0; }
+.sug-actions { display: flex; gap: 6px; align-items: center; }
+.sug-state { font: 500 12px/1 var(--mono); color: var(--muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: 500 13px/1 var(--ui); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rewrite { white-space: pre-wrap; font: 400 17px/1.65 var(--prose); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 0; min-height: 8em; overflow-wrap: anywhere; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { font-size: 13px; margin: 0; color: var(--muted); }
+.note.err { color: var(--pen); }
+.empty { font-size: 14px; color: var(--muted); margin: 0; padding: 12px 0; }
+
+/* Sections */
+.band { padding-block: 80px; }
+.band h2 { font: 400 clamp(32px, 4.5vw, 52px)/1.02 var(--display); margin: 0 0 36px; max-width: 18ch; text-wrap: balance; }
+.feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+@media (max-width: 820px) { .feats { grid-template-columns: 1fr; gap: 28px; } }
+.feat { display: flex; flex-direction: column; gap: 8px; }
+.feat .mark { font: 400 22px/1.3 var(--prose); }
+.feat .mark del { color: var(--pen); }
+.feat .mark ins { text-decoration: none; color: var(--green); }
+.feat h3 { font: 600 17px/1.3 var(--ui); margin: 0; }
+.feat p { margin: 0; color: var(--muted); }
+
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 820px) { .plans { grid-template-columns: 1fr; } }
+.plan { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.plan.pick { border: 2px solid var(--pen); }
+.plan h3 { margin: 0; font: 600 16px/1 var(--ui); display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.plan .flag { font: 500 10px/1 var(--mono); background: var(--pen); color: var(--pen-ink); padding: 5px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .06em; }
+.price { font: 400 48px/1 var(--display); font-variant-numeric: tabular-nums; }
+.price small { font: 400 14px/1 var(--ui); color: var(--muted); }
+.plan ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; flex: 1; }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; color: var(--muted); font-size: 14px; }
+</style>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#top">Red<span>line</span></a>
+    <div class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a class="btn btn-pen" href="#app">Start writing</a>
     </div>
-	<div>Noah Choi was here</div>
-	<div>Dodus Prime was here</div>
+  </div>
+</nav>
 
-	
-</body>
-</html>
+<main id="top">
+  <header class="hero wrap">
+    <h1><del>Pretty good</del> <em>Exactly right.</em></h1>
+    <p>Redline reads your draft like a sharp editor would. It marks what's unclear, wordy or off-key, explains why, and rewrites in the tone you need. You keep the final say on every change.</p>
+  </header>
+
+  <div class="wrap" id="app">
+    <div class="app">
+      <div class="appbar">
+        <span class="docname">Draft · Fridays_request.txt</span>
+        <span class="status" id="status">Connecting…</span>
+      </div>
+      <div class="grid">
+        <div class="editor">
+          <div class="editor-head">
+            <span class="label">Your draft</span>
+            <div class="row">
+              <button class="textlink" id="undoBtn" type="button" hidden>Undo last change</button>
+              <button class="textlink" id="sampleBtn" type="button">Reset to sample</button>
+            </div>
+          </div>
+          <textarea id="draft" spellcheck="true" aria-label="Your draft"></textarea>
+          <div class="stats" aria-label="Draft stats">
+            <div class="stat"><b id="sWords">0</b><span>Words</span></div>
+            <div class="stat"><b id="sRead">0s</b><span>Read time</span></div>
+            <div class="stat" id="sLenBox"><b id="sLen">0</b><span>Words / sentence</span></div>
+            <div class="stat" id="sHedgeBox"><b id="sHedge">0</b><span>Hedge words</span></div>
+          </div>
+        </div>
+
+        <div class="margin">
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tabSug" aria-selected="true" aria-controls="pSug" type="button">Suggestions</button>
+            <button role="tab" id="tabRw" aria-selected="false" aria-controls="pRw" type="button">Rewrite</button>
+          </div>
+
+          <div class="panel" id="pSug" role="tabpanel" aria-labelledby="tabSug">
+            <div class="panel-top">
+              <button class="btn btn-pen" id="checkBtn" type="button">Check my draft</button>
+              <span class="example" id="sugExample">Example</span>
+              <button class="btn btn-line btn-sm" id="acceptAll" type="button">Accept all</button>
+            </div>
+            <p class="note" id="sugNote" hidden></p>
+            <div class="sugs" id="sugs" aria-live="polite"></div>
+          </div>
+
+          <div class="panel" id="pRw" role="tabpanel" aria-labelledby="tabRw" hidden>
+            <span class="label">Make it…</span>
+            <div class="chips" id="goals" role="group" aria-label="Rewrite goal">
+              <button type="button" data-goal="clearer" aria-pressed="true">Clearer</button>
+              <button type="button" data-goal="shorter" aria-pressed="false">Shorter</button>
+              <button type="button" data-goal="friendlier" aria-pressed="false">Friendlier</button>
+              <button type="button" data-goal="more formal" aria-pressed="false">More formal</button>
+              <button type="button" data-goal="more confident" aria-pressed="false">More confident</button>
+            </div>
+            <div class="row">
+              <button class="btn btn-pen" id="rwBtn" type="button">Rewrite draft</button>
+              <button class="btn btn-line" id="stopBtn" type="button" hidden>Stop</button>
+            </div>
+            <pre class="rewrite" id="rwOut" aria-live="polite">Pick a goal and press Rewrite. The new version appears here, and you choose whether to use it.</pre>
+            <p class="note" id="rwNote" hidden></p>
+            <div class="row">
+              <button class="btn btn-line" id="useBtn" type="button" disabled>Use this version</button>
+              <button class="btn btn-line" id="copyBtn" type="button" disabled>Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <h2>An editor in the margin, not a ghostwriter.</h2>
+      <div class="feats">
+        <div class="feat">
+          <p class="mark"><del>alot</del> <ins>a lot</ins></p>
+          <h3>Catches the small stuff</h3>
+          <p>Spelling, grammar and agreement errors get flagged with the fix right next to them. One click applies it.</p>
+        </div>
+        <div class="feat">
+          <p class="mark"><del>I think kind of</del> <ins>shows</ins></p>
+          <h3>Cuts the hedging</h3>
+          <p>Redline spots the filler that makes you sound unsure and tells you why each cut makes your point stronger.</p>
+        </div>
+        <div class="feat">
+          <p class="mark"><del>whenever</del> <ins>this week</ins></p>
+          <h3>Rewrites on request</h3>
+          <p>Need it shorter, warmer or more formal? Get a full rewrite in seconds, compare it, and keep only what you like.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="pricing" style="padding-top:0">
+    <div class="wrap">
+      <h2>Pick a plan. Cancel anytime.</h2>
+      <div class="plans">
+        <div class="plan">
+          <h3>Free</h3>
+          <div class="price">$0 <small>/ month</small></div>
+          <ul><li>20 checks a month</li><li>Grammar and spelling</li><li>Two rewrite styles</li></ul>
+          <a class="btn btn-line" href="#app">Try the editor</a>
+        </div>
+        <div class="plan pick">
+          <h3>Writer <span class="flag">Most popular</span></h3>
+          <div class="price">$9 <small>/ month</small></div>
+          <ul><li>Unlimited checks and rewrites</li><li>Clarity and tone suggestions</li><li>Every rewrite style</li><li>Browser extension</li></ul>
+          <a class="btn btn-pen" href="#app">Start free trial</a>
+        </div>
+        <div class="plan">
+          <h3>Team</h3>
+          <div class="price">$7 <small>/ seat / month</small></div>
+          <ul><li>Shared style guide</li><li>Brand voice rules</li><li>Admin controls</li></ul>
+          <a class="btn btn-line" href="#top">Talk to us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Redline (concept mockup)</span>
+    <span>Suggestions and rewrites are generated by Claude.</span>
+  </div>
+</footer>
+
+<script>
+const SAMPLE = `Hi Sarah,
+
+I just wanted to reach out and touch base about the possibility of maybe working remotely on Fridays going forward. I feel like I am able to get alot more done when I'm not in the office because there is less distractions. Last month I finished the vendor report two days early, which I think kind of shows that I can stay focused.
+
+I would be really grateful if we could discuss this at some point whenever you have time. Let me know what you think.
+
+Thanks,
+Alex`;
+
+const EXAMPLE_SUGS = [
+  { kind: "clarity", original: "I just wanted to reach out and touch base about the possibility of maybe working remotely", replacement: "I'd like to talk about working remotely", reason: "Three warm-up phrases in a row bury your request. Lead with it." },
+  { kind: "spelling", original: "alot", replacement: "a lot", reason: "\"A lot\" is always two words." },
+  { kind: "grammar", original: "there is less distractions", replacement: "there are fewer distractions", reason: "\"Distractions\" is plural and countable, so use \"are\" and \"fewer\"." },
+  { kind: "tone", original: "which I think kind of shows", replacement: "which shows", reason: "Hedging undercuts your best evidence. State it plainly." },
+  { kind: "clarity", original: "at some point whenever you have time", replacement: "this week", reason: "A specific time makes it easier to say yes." }
+];
+
+const HEDGES = ["just", "maybe", "kind of", "sort of", "i think", "i feel like", "really", "probably", "perhaps", "basically", "actually"];
+const $ = (id) => document.getElementById(id);
+const draft = $("draft");
+let sample = null, sugs = EXAMPLE_SUGS.map(s => ({ ...s, state: "open" })), goal = "clearer", undoStack = [], ctl = null, lastRewrite = "";
+
+/* ---------- local stats ---------- */
+function stats() {
+  const t = draft.value.trim();
+  const words = t ? t.split(/\s+/).length : 0;
+  const sentences = t.split(/[.!?]+(\s|$)/).filter(s => s && s.trim().split(/\s+/).length > 2).length || (words ? 1 : 0);
+  const avg = sentences ? Math.round(words / sentences) : 0;
+  const lower = " " + t.toLowerCase().replace(/[^a-z' ]/g, " ") + " ";
+  const hedges = HEDGES.reduce((n, h) => n + (lower.split(" " + h + " ").length - 1), 0);
+  const secs = Math.round(words / 238 * 60);
+  $("sWords").textContent = words;
+  $("sRead").textContent = secs < 60 ? secs + "s" : Math.floor(secs / 60) + "m " + (secs % 60) + "s";
+  $("sLen").textContent = avg;
+  $("sHedge").textContent = hedges;
+  $("sLenBox").classList.toggle("flag", avg > 20);
+  $("sHedgeBox").classList.toggle("flag", hedges > 2);
+}
+draft.addEventListener("input", () => { stats(); renderSugs(); });
+
+function setDraft(text) {
+  undoStack.push(draft.value); if (undoStack.length > 30) undoStack.shift();
+  draft.value = text; $("undoBtn").hidden = false; stats(); renderSugs();
+}
+$("undoBtn").onclick = () => {
+  if (!undoStack.length) return;
+  draft.value = undoStack.pop(); $("undoBtn").hidden = !undoStack.length; stats(); renderSugs();
+};
+$("sampleBtn").onclick = () => setDraft(SAMPLE);
+
+/* ---------- status ---------- */
+function setStatus(text, cls) { const s = $("status"); s.textContent = text; s.className = "status " + (cls || ""); }
+function note(el, text, err) { el.textContent = text; el.hidden = !text; el.classList.toggle("err", !!err); }
+function copyFor(code) {
+  return ({
+    rate_limited: "You've hit a usage limit. Wait a minute and try again.",
+    session_expired: "Your session expired. Sign in to Claude again, then retry.",
+    refused: "The assistant couldn't work with this text. Edit it and try again.",
+    invalid_json: "The suggestions came back incomplete. Press Check again.",
+    empty_completion: "Nothing came back. Try again with a longer draft.",
+    prompt_too_large: "This draft is too long. Check one section at a time."
+  })[code] || "Couldn't reach the assistant. Try again.";
+}
+function aiOff(msg) {
+  ["checkBtn", "rwBtn"].forEach(id => $(id).disabled = true);
+  setStatus("AI unavailable");
+  note($("sugNote"), msg, false);
+}
+function isDenied(e) { return e?.code === "not_granted" || e?.code === "sampling_disabled"; }
+
+/* ---------- suggestions ---------- */
+function renderSugs() {
+  const box = $("sugs");
+  const open = sugs.filter(s => s.state === "open" && draft.value.includes(s.original));
+  $("acceptAll").disabled = !open.length;
+  if (!sugs.length) { box.innerHTML = '<p class="empty">No suggestions. This draft reads cleanly.</p>'; return; }
+  box.replaceChildren(...sugs.map((s, i) => {
+    const card = document.createElement("div");
+    const stale = s.state === "open" && !draft.value.includes(s.original);
+    card.className = "sug " + (s.state !== "open" ? s.state : "");
+    const top = document.createElement("div"); top.className = "sug-top";
+    const k = document.createElement("span"); const kind = ["grammar","spelling","clarity","tone"].includes(s.kind) ? s.kind : "other";
+    k.className = "kind " + kind; k.textContent = s.kind || "edit";
+    top.append(k);
+    const p = document.createElement("p"); p.className = "change";
+    const d = document.createElement("del"); d.textContent = s.original;
+    const ins = document.createElement("ins"); ins.textContent = s.replacement || "(remove)";
+    p.append(d, " ", ins);
+    const why = document.createElement("p"); why.className = "why"; why.textContent = s.reason || "";
+    const act = document.createElement("div"); act.className = "sug-actions";
+    if (s.state === "open" && !stale) {
+      const a = document.createElement("button"); a.className = "btn btn-pen btn-sm"; a.type = "button"; a.textContent = "Accept"; a.onclick = () => apply(i);
+      const x = document.createElement("button"); x.className = "btn btn-line btn-sm"; x.type = "button"; x.textContent = "Dismiss"; x.onclick = () => { s.state = "dismissed"; renderSugs(); };
+      act.append(a, x);
+    } else {
+      const st = document.createElement("span"); st.className = "sug-state";
+      st.textContent = s.state === "applied" ? "Applied" : s.state === "dismissed" ? "Dismissed" : "Text changed, run the check again";
+      act.append(st);
+    }
+    card.append(top, p, why, act);
+    return card;
+  }));
+}
+function apply(i) {
+  const s = sugs[i];
+  if (!draft.value.includes(s.original)) return renderSugs();
+  s.state = "applied";
+  setDraft(draft.value.replace(s.original, s.replacement || ""));
+}
+$("acceptAll").onclick = () => {
+  let t = draft.value, any = false;
+  sugs.forEach(s => { if (s.state === "open" && t.includes(s.original)) { t = t.replace(s.original, s.replacement || ""); s.state = "applied"; any = true; } });
+  if (any) setDraft(t);
+};
+
+$("checkBtn").onclick = async () => {
+  if (!sample) return;
+  const text = draft.value.trim();
+  if (text.split(/\s+/).length < 5) { note($("sugNote"), "Write a sentence or two first.", true); return; }
+  const btn = $("checkBtn"); btn.disabled = true; btn.textContent = "Reading…";
+  setStatus("Reading your draft…", "busy"); note($("sugNote"), "", false);
+  try {
+    const out = await sample.json(
+`You are a careful copy editor. Review the draft below and suggest up to 8 specific edits covering spelling, grammar, clarity (wordiness, buried points) and tone (hedging, weak phrasing). Keep the writer's voice. Skip anything that is already fine.
+
+Each "original" MUST be copied character-for-character from the draft (a short exact phrase, not a whole paragraph) so it can be found and replaced. "replacement" is the new text for that phrase (empty string to delete). "reason" is one short plain sentence explaining why.
+
+Reply with only a JSON array:
+[{"kind": "spelling" | "grammar" | "clarity" | "tone", "original": string, "replacement": string, "reason": string}]
+Reply [] if nothing needs changing.
+
+Draft:
+"""
+${text.slice(0, 20000)}
+"""`);
+    if (!Array.isArray(out)) throw { code: "invalid_json" };
+    sugs = out.filter(s => s && typeof s.original === "string" && s.original && draft.value.includes(s.original))
+      .map(s => ({ kind: String(s.kind || "edit").toLowerCase(), original: s.original, replacement: String(s.replacement ?? ""), reason: String(s.reason || ""), state: "open" }));
+    $("sugExample").hidden = true;
+    renderSugs();
+    setStatus(sugs.length ? sugs.length + " suggestion" + (sugs.length === 1 ? "" : "s") : "Looks good", "live");
+  } catch (e) {
+    if (isDenied(e)) aiOff("AI access wasn't allowed, so you're seeing example suggestions only.");
+    else { note($("sugNote"), copyFor(e?.code), true); setStatus("Ready", "live"); }
+  } finally {
+    btn.textContent = "Check my draft";
+    if (sample && !$("status").textContent.includes("unavailable")) btn.disabled = false;
+  }
+};
+
+/* ---------- rewrite ---------- */
+document.querySelectorAll("#goals button").forEach(b => b.onclick = () => {
+  goal = b.dataset.goal;
+  document.querySelectorAll("#goals button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+$("stopBtn").onclick = () => ctl?.abort();
+$("rwBtn").onclick = async () => {
+  if (!sample) return;
+  const text = draft.value.trim();
+  if (text.split(/\s+/).length < 5) { note($("rwNote"), "Write a sentence or two first.", true); return; }
+  ctl = new AbortController();
+  const out = $("rwOut"), btn = $("rwBtn");
+  btn.disabled = true; $("stopBtn").hidden = false; $("useBtn").disabled = true; $("copyBtn").disabled = true;
+  out.textContent = "Thinking…"; note($("rwNote"), "", false); setStatus("Rewriting…", "busy");
+  try {
+    const { text: result, truncated } = await sample(
+`Rewrite the draft below to make it ${goal}. Keep the same meaning, facts, names and format (greeting, paragraphs, sign-off). Don't add new claims. Reply with only the rewritten text, no preface or notes.
+
+Draft:
+"""
+${text.slice(0, 20000)}
+"""`,
+      { signal: ctl.signal, cache: false, onText: ({ text }) => { out.textContent = text; } });
+    lastRewrite = result.trim();
+    $("useBtn").disabled = false; $("copyBtn").disabled = false;
+    if (truncated) note($("rwNote"), "The rewrite was cut short. Try a shorter section.", true);
+    setStatus("Rewrite ready", "live");
+  } catch (e) {
+    if (e?.text) { out.textContent = e.text; lastRewrite = e.text.trim(); $("useBtn").disabled = false; $("copyBtn").disabled = false; }
+    else out.textContent = "";
+    if (isDenied(e)) { aiOff("AI access wasn't allowed, so the assistant is turned off for this visit."); note($("rwNote"), "AI access wasn't allowed.", true); }
+    else if (e?.code !== "cancelled") note($("rwNote"), copyFor(e?.code), true);
+    if (!isDenied(e)) setStatus("Ready", "live");
+  } finally {
+    $("stopBtn").hidden = true;
+    if (sample && !$("status").textContent.includes("unavailable")) btn.disabled = false;
+  }
+};
+$("useBtn").onclick = () => { if (lastRewrite) { setDraft(lastRewrite); $("useBtn").disabled = true; } };
+$("copyBtn").onclick = async (e) => {
+  const b = e.currentTarget;
+  try { await navigator.clipboard.writeText(lastRewrite); b.textContent = "Copied"; }
+  catch { const r = document.createRange(); r.selectNodeContents($("rwOut")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+  setTimeout(() => b.textContent = "Copy", 1600);
+};
+
+/* ---------- tabs ---------- */
+function showTab(which) {
+  const sug = which === "sug";
+  $("tabSug").setAttribute("aria-selected", String(sug)); $("tabRw").setAttribute("aria-selected", String(!sug));
+  $("pSug").hidden = !sug; $("pRw").hidden = sug;
+}
+$("tabSug").onclick = () => showTab("sug");
+$("tabRw").onclick = () => showTab("rw");
+
+/* ---------- boot ---------- */
+draft.value = SAMPLE; stats(); renderSugs();
+$("checkBtn").disabled = true; $("rwBtn").disabled = true;
+(async () => {
+  try { sample = window.claude ? await window.claude.use("sample") : null; } catch { sample = null; }
+  if (!sample) { aiOff("The live assistant isn't available in this view. These are example suggestions."); return; }
+  $("checkBtn").disabled = false; $("rwBtn").disabled = false;
+  setStatus("Ready", "live");
+})();
+</script>
+
+</body></html>
