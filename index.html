@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Redline Writing Assistant (Copy)</title>
+<title>Redline Writing Assistant</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -80,6 +80,9 @@ nav .wrap { display: flex; justify-content: space-between; align-items: center; 
 @keyframes blink { 50% { opacity: .2; } }
 @media (prefers-reduced-motion: reduce) { .status.busy::before { animation: none; } }
 
+.keybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.keybar input { flex: 1 1 220px; min-width: 0; font: 400 14px/1 var(--mono); padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+.keybar .note { flex-basis: 100%; }
 .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
 .editor { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -176,6 +179,13 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
       <div class="appbar">
         <span class="docname">Draft · Fridays_request.txt</span>
         <span class="status" id="status">Connecting…</span>
+      </div>
+      <div class="keybar">
+        <label for="apiKey" class="label">Anthropic API key</label>
+        <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
+        <button class="btn btn-pen btn-sm" id="keySave" type="button">Save</button>
+        <button class="btn btn-line btn-sm" id="keyClear" type="button" hidden>Remove key</button>
+        <p class="note">Your key stays in this browser tab only and is sent only to api.anthropic.com. Get one at console.anthropic.com. Usage is billed to your account.</p>
       </div>
       <div class="grid">
         <div class="editor">
@@ -354,7 +364,9 @@ function copyFor(code) {
     refused: "The assistant couldn't work with this text. Edit it and try again.",
     invalid_json: "The suggestions came back incomplete. Press Check again.",
     empty_completion: "Nothing came back. Try again with a longer draft.",
-    prompt_too_large: "This draft is too long. Check one section at a time."
+    prompt_too_large: "This draft is too long. Check one section at a time.",
+    no_key: "Add your Anthropic API key above first.",
+    bad_key: "Anthropic rejected that API key. Check it and save it again."
   })[code] || "Couldn't reach the assistant. Try again.";
 }
 function aiOff(msg) {
@@ -499,15 +511,90 @@ function showTab(which) {
 $("tabSug").onclick = () => showTab("sug");
 $("tabRw").onclick = () => showTab("rw");
 
+/* ---------- Anthropic API (bring your own key) ---------- */
+const MODEL = "claude-sonnet-5-5"; // change here if you want a different model
+const KEY_STORE = "redline_api_key";
+let keyMem = "";
+function getKey() { try { return sessionStorage.getItem(KEY_STORE) || keyMem; } catch { return keyMem; } }
+function setKey(k) { keyMem = k; try { k ? sessionStorage.setItem(KEY_STORE, k) : sessionStorage.removeItem(KEY_STORE); } catch {} }
+
+async function callClaude(prompt, { signal, onText } = {}) {
+  const key = getKey();
+  if (!key) throw { code: "no_key", message: "No API key" };
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", signal,
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 4096, stream: true, messages: [{ role: "user", content: prompt }] })
+    });
+  } catch (e) {
+    if (e?.name === "AbortError") throw { code: "cancelled", message: "cancelled" };
+    throw { code: "upstream_error", message: String(e) };
+  }
+  if (!res.ok) {
+    const code = res.status === 401 || res.status === 403 ? "bad_key" : res.status === 429 ? "rate_limited" : res.status === 413 ? "prompt_too_large" : "upstream_error";
+    throw { code, message: "HTTP " + res.status };
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "", stop = "";
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+        if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") { text += ev.delta.text; onText?.({ text, delta: ev.delta.text }); }
+        else if (ev.type === "message_delta" && ev.delta?.stop_reason) stop = ev.delta.stop_reason;
+        else if (ev.type === "error") throw { code: "upstream_error", message: ev.error?.message || "stream error", text };
+      }
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") throw { code: "cancelled", message: "cancelled", text };
+    throw e?.code ? e : { code: "upstream_error", message: String(e), text };
+  }
+  if (stop === "refusal") throw { code: "refused", message: "refused" };
+  if (!text.trim()) throw { code: "empty_completion", message: "empty" };
+  return { text, truncated: stop === "max_tokens" };
+}
+const sampleShim = (prompt, opts) => callClaude(prompt, opts);
+sampleShim.json = async (prompt, opts) => {
+  const { text } = await callClaude(prompt, opts);
+  const clean = text.replace(/```json|```/g, "").trim();
+  const a = clean.indexOf("["), b = clean.lastIndexOf("]");
+  try { return JSON.parse(a >= 0 && b > a ? clean.slice(a, b + 1) : clean); }
+  catch { throw { code: "invalid_json", message: "Bad JSON", text }; }
+};
+
+function refreshKeyUI() {
+  const has = !!getKey();
+  $("keyClear").hidden = !has;
+  $("apiKey").value = "";
+  $("apiKey").placeholder = has ? "Key saved for this tab" : "sk-ant-...";
+  setStatus(has ? "Ready" : "Add your API key", has ? "live" : "");
+}
+$("keySave").onclick = () => {
+  const k = $("apiKey").value.trim();
+  if (!k) return;
+  setKey(k); note($("sugNote"), "", false); refreshKeyUI();
+};
+$("apiKey").addEventListener("keydown", e => { if (e.key === "Enter") $("keySave").click(); });
+$("keyClear").onclick = () => { setKey(""); refreshKeyUI(); };
+
 /* ---------- boot ---------- */
 draft.value = SAMPLE; stats(); renderSugs();
 $("checkBtn").disabled = true; $("rwBtn").disabled = true;
-(async () => {
-  try { sample = window.claude ? await window.claude.use("sample") : null; } catch { sample = null; }
-  if (!sample) { aiOff("The live assistant isn't available in this view. These are example suggestions."); return; }
-  $("checkBtn").disabled = false; $("rwBtn").disabled = false;
-  setStatus("Ready", "live");
-})();
+sample = sampleShim;
+$("checkBtn").disabled = false; $("rwBtn").disabled = false;
+refreshKeyUI();
 </script>
 
 </body></html>
