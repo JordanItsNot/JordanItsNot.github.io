@@ -180,13 +180,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
         <span class="docname">Draft · Fridays_request.txt</span>
         <span class="status" id="status">Connecting…</span>
       </div>
-      <div class="keybar">
-        <label for="apiKey" class="label">Anthropic API key</label>
-        <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
-        <button class="btn btn-pen btn-sm" id="keySave" type="button">Save</button>
-        <button class="btn btn-line btn-sm" id="keyClear" type="button" hidden>Remove key</button>
-        <p class="note">Your key stays in this browser tab only and is sent only to api.anthropic.com. Get one at console.anthropic.com. Usage is billed to your account.</p>
-      </div>
+      
       <div class="grid">
         <div class="editor">
           <div class="editor-head">
@@ -511,90 +505,101 @@ function showTab(which) {
 $("tabSug").onclick = () => showTab("sug");
 $("tabRw").onclick = () => showTab("rw");
 
-/* ---------- Anthropic API (bring your own key) ---------- */
-const MODEL = "claude-sonnet-5-5"; // change here if you want a different model
-const KEY_STORE = "redline_api_key";
-let keyMem = "";
-function getKey() { try { return sessionStorage.getItem(KEY_STORE) || keyMem; } catch { return keyMem; } }
-function setKey(k) { keyMem = k; try { k ? sessionStorage.setItem(KEY_STORE, k) : sessionStorage.removeItem(KEY_STORE); } catch {} }
+
+/* ---------- Vercel AI API ---------- */
 
 async function callClaude(prompt, { signal, onText } = {}) {
-  const key = getKey();
-  if (!key) throw { code: "no_key", message: "No API key" };
-  let res;
+  let response;
+
   try {
-    res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST", signal,
+    response = await fetch("/api/ai", {
+      method: "POST",
+      signal,
       headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ model: MODEL, max_tokens: 4096, stream: true, messages: [{ role: "user", content: prompt }] })
+      body: JSON.stringify({ prompt })
     });
-  } catch (e) {
-    if (e?.name === "AbortError") throw { code: "cancelled", message: "cancelled" };
-    throw { code: "upstream_error", message: String(e) };
-  }
-  if (!res.ok) {
-    const code = res.status === 401 || res.status === 403 ? "bad_key" : res.status === 429 ? "rate_limited" : res.status === 413 ? "prompt_too_large" : "upstream_error";
-    throw { code, message: "HTTP " + res.status };
-  }
-  const reader = res.body.getReader(), dec = new TextDecoder();
-  let buf = "", text = "", stop = "";
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n"); buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
-        if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") { text += ev.delta.text; onText?.({ text, delta: ev.delta.text }); }
-        else if (ev.type === "message_delta" && ev.delta?.stop_reason) stop = ev.delta.stop_reason;
-        else if (ev.type === "error") throw { code: "upstream_error", message: ev.error?.message || "stream error", text };
-      }
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw { code: "cancelled" };
     }
-  } catch (e) {
-    if (e?.name === "AbortError") throw { code: "cancelled", message: "cancelled", text };
-    throw e?.code ? e : { code: "upstream_error", message: String(e), text };
+
+    throw { code: "upstream_error" };
   }
-  if (stop === "refusal") throw { code: "refused", message: "refused" };
-  if (!text.trim()) throw { code: "empty_completion", message: "empty" };
-  return { text, truncated: stop === "max_tokens" };
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw { code: "upstream_error" };
+  }
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw { code: "rate_limited" };
+    }
+
+    throw {
+      code: "upstream_error",
+      message: data.error || "AI request failed"
+    };
+  }
+
+  const text = data.text;
+
+  if (typeof text !== "string" || !text.trim()) {
+    throw { code: "empty_completion" };
+  }
+
+  onText?.({ text, delta: text });
+
+  return {
+    text,
+    truncated: false
+  };
 }
-const sampleShim = (prompt, opts) => callClaude(prompt, opts);
+
+const sampleShim = (prompt, opts) =>
+  callClaude(prompt, opts);
+
 sampleShim.json = async (prompt, opts) => {
   const { text } = await callClaude(prompt, opts);
-  const clean = text.replace(/```json|```/g, "").trim();
-  const a = clean.indexOf("["), b = clean.lastIndexOf("]");
-  try { return JSON.parse(a >= 0 && b > a ? clean.slice(a, b + 1) : clean); }
-  catch { throw { code: "invalid_json", message: "Bad JSON", text }; }
+  const clean = text
+    .replace(/```json|```/g, "")
+    .trim();
+
+  const a = clean.indexOf("[");
+  const b = clean.lastIndexOf("]");
+
+  try {
+    return JSON.parse(
+      a >= 0 && b > a
+        ? clean.slice(a, b + 1)
+        : clean
+    );
+  } catch {
+    throw {
+      code: "invalid_json",
+      message: "Invalid JSON response",
+      text
+    };
+  }
 };
 
-function refreshKeyUI() {
-  const has = !!getKey();
-  $("keyClear").hidden = !has;
-  $("apiKey").value = "";
-  $("apiKey").placeholder = has ? "Key saved for this tab" : "sk-ant-...";
-  setStatus(has ? "Ready" : "Add your API key", has ? "live" : "");
-}
-$("keySave").onclick = () => {
-  const k = $("apiKey").value.trim();
-  if (!k) return;
-  setKey(k); note($("sugNote"), "", false); refreshKeyUI();
-};
-$("apiKey").addEventListener("keydown", e => { if (e.key === "Enter") $("keySave").click(); });
-$("keyClear").onclick = () => { setKey(""); refreshKeyUI(); };
 
 /* ---------- boot ---------- */
-draft.value = SAMPLE; stats(); renderSugs();
-$("checkBtn").disabled = true; $("rwBtn").disabled = true;
+draft.value = SAMPLE;
+stats();
+renderSugs();
+
 sample = sampleShim;
-$("checkBtn").disabled = false; $("rwBtn").disabled = false;
-refreshKeyUI();
+$("checkBtn").disabled = false;
+$("rwBtn").disabled = false;
+
+setStatus("Ready", "live");
+
 </script>
 
 </body></html>
